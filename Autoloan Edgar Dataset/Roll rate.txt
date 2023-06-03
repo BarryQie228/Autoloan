@@ -1,0 +1,18 @@
+<note type="base">Applied to table: pub.fin.edgar.auto_loan.loan_detail</note>
+<base table="pub.fin.edgar.auto_loan.loan_detail"/>
+<sel value="credit_score>300"/>
+<willbe name="drop_record_flag" value="iff((zero_bal_code=NA) & (dq_status=NA);1;0)"/>
+<note type="user"> Create a flag called drop_record which assigns a value of 1 toloan records whose zero_balance_code and dq_status are both blank,i.e.NA,andassign a value of θ otherwise. </note>
+<sel value="drop_record_flag=0"/>
+<willbe name="mod_flag" value="iff(mod_type_code='';0;1)"/>
+<sel value="begin_bal>0"/>
+<willbe name="fico_bucket" value="iff(credit_score<=660;'below 660';credit_score<=720; '660-720' ;credit_score<=800; 'above 720';'no fico')"/>
+<note type="user"> current_status takes the value of default if the zero balancecode of the loan record is 4; if the zero balance code is values other than 4 butnot empty (namely 1,2,3,5,and 99), we call the current_status "paid off", since wedo not differentiate the reason for paid off in the roll analysis; otherwise(ifzero balance code is empty), i.e. prior to conditions are not met, current_statustakes the delinquency buckets evaluated from dq_status column which is originally inthe Edgar dataset. The vertical dash | is logical operator 'or' in 1010's XML </note>
+<willbe name="current_status" value="iff(zero_bal_code=4;'default';zero_bal_code='1' '2' '3' '5';'paid_off';dq_status=0 & mod_flag=1;'current, modified';dq_status=0 & mod_flag=0; 'current, not modified';dq_status<30;'less than 30 delinq';dq_status<60;'30~59 days delinq';dq_status<90;'60~89 days delinq';'90 and above days delinq')"/>
+<note type="user"> initial_status uses the g_rshift function which is basically thecurrent_status column values but shift back 1 row. Note the rows that have emptyinitial_status tells us that those records are first period of the loan beingoriginated. </note>
+<willbe name="initial_status" value="g_rshift(seqnum;;;current_status;-1)"/>
+<tabu breaks="fmonth, fico_bucket,initial_status,current_status">
+  <tcol source="asset_id" fun="cnt" name="number_of_loans"/>
+  <tcol source="begin_bal" fun="sum" name="begin_bal"/>
+</tabu>
+<sort cols="fmonth,fico_bucket"/>

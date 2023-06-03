@@ -1,0 +1,25 @@
+<base table="pub.fin.edgar.auto_loan.loan_detail"/>
+<sel value="credit_score>300"/>
+<willbe name="drop_record_flag" value="iff((zero_bal_code=NA)&(dq_status=NA);1;0)"/>
+<note type="user"> Create a flag called drop_record which assigns a value of 1 to 1oan records whose zero_balance_code and dq_status are both blank,i.e.NA,andassign a value of 0 otherwise. </note>
+<sel value="drop_record_flag=0"/>
+<willbe name="fico_bucket" value="iff(credit_score<=660; 'below 660';credit_score<=720;'660-720';credit_score>720;'above 720';'no fico')"/>
+<willbe name="recov_flag" value="iff(recov_amt>0;1;0)"/>
+<willbe name="recov_count" value="g_cumsum(seqnum;;fmonth;recov_flag)"/>
+<willbe name="recov_amt_total" value="g_cumsum(seqnum;;fmonth;recov_amt)"/>
+<willbe name="recov_amt_max" value="g_hi(seqnum;;recov_amt_total)"/>
+<willbe name="def_bal" value="if(zero_bal_code='4'&zero_bal_dt=fmonth; begin_bal;0)"/>
+<willbe name="prepay_bal" value="if(zero_bal_code='1' '2' '3' '5' & zero_bal_dt=fmonth;begin_bal;0)"/>
+<willbe name="curtail_bal" value="if(total_paid<>sched_pmt & zero_bal_code=NA;total_paid-sched_pmt;0)"/>
+<willbe name="loss_amt" value="if(def_bal>0;max(0;chargeoff_prin-recov_amt_max);0)"/>
+<tabu breaks="fmonth,fico_bucket">
+  <tcol source="orig_amt" fun="sum" name="orig_bal"/>
+  <tcol source="end_bal" fun="sum" name="end_bal"/>
+  <tcol source="begin_bal" fun="sum" name="begin_bal"/>
+  <tcol source="prepay_bal" fun="sum" name="prepay_bal"/>
+  <tcol source="def_bal" fun="sum" name="def_bal"/>
+  <tcol source="curtail_bal" fun="sum" name="curtail_bal"/>
+  <tcol source="recov_amt" fun="sum" name="recov_amt"/>
+  <tcol source="loss_amt" fun="sum" name="loss_amt"/>
+</tabu>
+<sort col="fmonth"/>

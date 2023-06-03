@@ -1,0 +1,17 @@
+<base table="pub.fin.edgar.auto_loan.loan_detail"/>
+<sel value="(credit_score>300)"/>
+<willbe name="drop_record_flag" value="iff((zero_bal_code=NA) & (dq_status=NA);1;0)"/>
+<note type="user">Create a flag called drop_record which assigns a value of 1 toloan records whose zero_balance_code and dq_status are both blank, i.e. NA,and assign a value of θ otherwise.</note>
+<sel value="drop_record_flag=0"/>
+<willbe name="fico_bucket" value="iff(credit_score<=660;'below 660';credit_score<=720;'660-720';credit_score>720;'above 720';'no fico')"/>
+<willbe name="is_dq" value="iff(dq_status>29;1;0)"/>
+<willbe name="hasbeen_dq" value="g_cumhi(seqnum;;fmonth;is_dq)"/>
+<willbe name="hasbeen_cure_temp" value="g_cumhi(seqnum;;fmonth;is_dq)"/>
+<willbe name="cure_flag" value="g_cumhi(seqnum;;fmonth;hasbeen_cure_temp)"/>
+<willbe name="mod_flag" value="iff(mod_type_code='';0;1)"/>
+<willbe name="mod_joint_cure_flag" value="if(mod_flag=1 & cure_flag=1;1;0)"/>
+<sel value="dq_status=0"/>
+<tabu breaks="fmonth,fico_bucket,mod_joint_cure_flag">
+  <tcol source="end_bal" fun="sum" name="end_bal_sum"/>
+</tabu>
+<sort cols="fmonth,fico_bucket,mod_joint_cure_flag"/>

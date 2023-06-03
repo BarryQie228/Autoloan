@@ -1,0 +1,12 @@
+<base table="pub.fin.edgar.auto_loan.loan_detail"/>
+<sel value="(credit_score>300)"/>
+<willbe name="drop_record_flag" value="iff((zero_bal_code=NA) & (dq_status=NA);1;0)"/>
+<note type="user"> Create a flag called drop_record which assigns a value of 1 to 1oan records whose zero_balance_code and dq_status are both blank,i.e.NA,andassign a value of 0 otherwise. </note>
+<sel value="drop_record_flag=0"/>
+<willbe name="fico_bucket" value="iff(credit_score<=660;'below 660';credit_score<=720;'660-720';credit_score>720;'above 720';'no fico')"/>
+<note type="user"> We have tested that dq_status being empty does not carry any notional.</note>
+<willbe name="mod_flag" value="iff(mod_type_code='';0;1)"/>
+<tabu breaks="fmonth,fico_bucket,mod_flag">
+  <tcol fun="sum" name="end_bal_sum" label="end_bal_sum" source="end_bal"/>
+</tabu>
+<sort cols="fmonth,fico_bucket,mod_flag"/>

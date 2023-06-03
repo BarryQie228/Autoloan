@@ -1,0 +1,23 @@
+<base table="pub.fin.edgar.auto_loan.loan_detail"/>
+<sel value="(credit_score>300)"/>
+<willbe name="drop_record_flag" value="iff((zero_bal_code=NA) & (dq_status=NA);1;0)"/>
+<note type="user"> Create a flag called drop_record which assigns a value of 1 to 1oan records whose zero_balance_code and dq_status are both blank,i.e.NA,andassign a value of 0 otherwise. </note>
+<sel value="drop_record_flag=0"/>
+<willbe name="fico_bucket" value="iff(credit_score<=660;'below 660';credit_score<=720; '660-720' ;credit_score<=800; 'above 720';'no fico')"/>
+<willbe name="def_bal" value="if(zero_bal_code='4'&zero_bal_dt=fmonth;begin_bal;0)"/>
+<willbe name="vintage_year" value="year(orig_dt)"/>
+<willbe name="vintage_month" value="month(orig_dt)"/>
+<willbe name="vintage_halfyr_denote" value="iff(vintage_month<=6;'1H' ;vintage_month>6; '2H'; 'n/a')"/>
+<willbe name="vintage_bucket" value="colunion(vintage_year vintage_halfyr_denote;',')"/>
+<willbe name="vintage_date_in_months" value="12*(vintage_year)+vintage_month"/>
+<willbe name="fmonth_yr" value="year(fmonth)"/>
+<willbe name="fmonth_month" value="month(fmonth)"/>
+<willbe name="fmonth_date_in_months" value="12*fmonth_yr+fmonth_month"/>
+<willbe name="seasoning" value="fmonth_date_in_months-vintage_date_in_months"/>
+<note type="user">Selecting only the 2019,2020,2021,2022 vintage_buckets</note>
+<sel value="(vintage_bucket='1H,2019') | (vintage_bucket='2019,2H') | (vintage_bucket='1H,2020') | (vintage_bucket='2020,2H') | (vintage_bucket='1H,2021') | (vintage_bucket='2021,2H') | (vintage_bucket='1H,2022')| (vintage_bucket='2022,2H' )"/>
+<tabu breaks="seasoning,fico_bucket,vintage_bucket">
+  <tcol source="begin_bal" fun="sum" name="begin_bal"/>
+  <tcol source="def_bal" fun="sum" name="def_bal"/>
+</tabu>
+<sort cols="seasoning,fico_bucket,vintage_bucket"/>

@@ -1,0 +1,14 @@
+<note type="base">Applied to table: pub.fin.edgar.auto_loan.loan_detail</note>
+<base table="pub.fin.edgar.auto_loan.loan_detail"/>
+<sel value="credit_score>300"/>
+<willbe name="drop_record_flag" value="iff((zero_bal_code=NA) & (dq_status=NA);1;0)"/>
+<note type="user"> Create a flag called drop_record which assigns a value of 1 toloan records whose zero_balance_code and dq_status are both blank,i.e.NA,andassign a value of θ otherwise. </note>
+<sel value="drop_record_flag=0"/>
+<willbe name="delinq_bucket" value="iff(zero_bal_code=4;'default';zero_bal_code='1' '2' '3' '5';'paid_off';dq_status=0;'current';dq_status<30;'less than 30 delinq';dq_status<60;'30~59 days delinq';dq_status<90;'60~89 days delinq';'90 and above days delinq')" label="delinquency bucket"/>
+<willbe name="fico_bucket" value="iff(credit_score<=660;'below 660';credit_score<=720; '660-720' ;credit_score<=800; 'above 720';'no fico')"/>
+<note type="user"> Creating the FICO buckets</note>
+<tabu breaks="fmonth,fico_bucket,delinq_bucket">
+  <tcol fun="sum" name="begin_bal" source="begin_bal"/>
+  <tcol fun="sum" name="end_bal" source="end_bal"/>
+</tabu>
+<sort cols="fmonth,fico_bucket,delinq_bucket"/>
